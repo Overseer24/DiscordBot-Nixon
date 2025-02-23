@@ -36,7 +36,7 @@ client.on("messageCreate", async (message) => {
                     .setTimestamp();
 
                 // Send the embed with the thumbnail
-                generalChannel.send({ embeds: [embed], files: [thumbnailAttachment] }).catch(console.error);
+                generalChannel.send({ embeds: [embed] }).catch(console.error);
 
                 // Delete the thumbnail file after sending
     } else {
