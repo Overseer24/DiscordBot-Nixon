@@ -1,9 +1,6 @@
 require("dotenv").config();
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require("discord.js");
-const ffmpeg = require("fluent-ffmpeg");
-const ffmpegPath = require("ffmpeg-static");
-const fs = require("fs");
-const path = require("path");
+
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
