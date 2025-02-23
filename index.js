@@ -15,12 +15,6 @@ const client = new Client({
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
 const GENERAL_CHANNEL_ID = process.env.GENERAL_CHANNELS_ID;
 
-if (ffmpegPath) {
-    ffmpeg.setFfmpegPath(ffmpegPath);
-} else {
-    console.error("❌ FFmpeg path is missing. Make sure it's installed.");
-}
-
 client.on("messageCreate", async (message) => {
     // Check if the message is in the attachments channel and contains attachments
     if (message.channel.id === ATTACHMENTS_CHANNEL_ID && message.attachments.size > 0) {
@@ -33,22 +27,13 @@ client.on("messageCreate", async (message) => {
                 const thumbnailPath = path.join(__dirname, "thumbnail.jpg");
 
                 // Generate a thumbnail using FFmpeg
-                ffmpeg(videoUrl)
-                    .screenshots({
-                        timestamps: ["00:00:01"], // Capture a frame at 1 second
-                        filename: "thumbnail.jpg",
-                        folder: __dirname,
-                    })
-                    .on("end", async () => {
-                        // Read the generated thumbnail
-                        const thumbnailFile = fs.readFileSync(thumbnailPath);
-                        const thumbnailAttachment = new AttachmentBuilder(thumbnailFile, { name: "thumbnail.jpg" });
+  
 
                         // Create the embed
                         const embed = new EmbedBuilder()
                             .setTitle("🎥 New Video Attachment")
                             .setDescription(`${message.author} has sent a video in ${message.channel}`)
-                            .setImage("attachment://thumbnail.jpg") // Use the generated thumbnail
+                            .setImage(message.author.displayAvatarURL({size:512})) // Use the generated thumbnail
                             .setFooter({ text: `Author: ${message.author.tag}` })
                             .setTimestamp();
 
