@@ -15,8 +15,11 @@ const client = new Client({
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
 const GENERAL_CHANNEL_ID = process.env.GENERAL_CHANNELS_ID;
 
-// Ensure FFmpeg is available
-ffmpeg.setFfmpegPath(ffmpegPath);
+if (ffmpegPath) {
+    ffmpeg.setFfmpegPath(ffmpegPath);
+} else {
+    console.error("❌ FFmpeg path is missing. Make sure it's installed.");
+}
 
 client.on("messageCreate", async (message) => {
     // Check if the message is in the attachments channel and contains attachments
