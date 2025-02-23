@@ -12,8 +12,8 @@ const client = new Client({
     },
 });
 
-const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENTS_CHANNEL_ID;
-const GENERAL_CHANNEL_ID = process.env.GENERAL_CHANNEL_ID;
+const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
+const GENERAL_CHANNEL_ID = process.env.GENERAL_CHANNELS_ID;
 
 // Ensure FFmpeg is available
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -92,4 +92,4 @@ client.on("shardReconnecting", (shardId) => {
     console.log(`Shard ${shardId} Reconnecting...`);
 });
 
-client.login(process.env.BOT_TOKEN);
+client.login(process.env.DISCORD_TOKEN).catch(console.error);
