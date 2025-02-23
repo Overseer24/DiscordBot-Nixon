@@ -1,2 +1,8 @@
 [phases.setup]
-nixPkgs = ["ffmpeg"]
+nixPkgs = ["nodejs", "ffmpeg"]
+
+[phases.build]
+cmds = ["npm install"]
+
+[phases.start]
+cmds = ["node index.js"] # Change to your main file name
