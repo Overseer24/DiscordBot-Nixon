@@ -23,8 +23,6 @@ client.on("messageCreate", async (message) => {
         message.attachments.forEach(async (attachment) => {
             // Check if the attachment is a video
             if (attachment.contentType && attachment.contentType.startsWith("video")) {
-                const videoUrl = attachment.url;
-                const thumbnailPath = path.join(__dirname, "thumbnail.jpg");
 
                 // Generate a thumbnail using FFmpeg
 
