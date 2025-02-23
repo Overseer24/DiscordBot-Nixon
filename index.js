@@ -27,36 +27,31 @@ client.on("messageCreate", async (message) => {
                 const thumbnailPath = path.join(__dirname, "thumbnail.jpg");
 
                 // Generate a thumbnail using FFmpeg
-  
 
-                        // Create the embed
-                        const embed = new EmbedBuilder()
-                            .setTitle("🎥 New Video Attachment")
-                            .setDescription(`${message.author} has sent a video in ${message.channel}`)
-                            .setImage(message.author.displayAvatarURL({size:512})) // Use the generated thumbnail
-                            .setFooter({ text: `Author: ${message.author.tag}` })
-                            .setTimestamp();
 
-                        // Send the embed with the thumbnail
-                        generalChannel.send({ embeds: [embed], files: [thumbnailAttachment] }).catch(console.error);
-
-                        // Delete the thumbnail file after sending
-                        fs.unlinkSync(thumbnailPath);
-                    })
-                    .on("error", (err) => {
-                        console.error("Error generating thumbnail:", err);
-                    });
-            } else {
-                // Handle non-video attachments (e.g., images)
+                // Create the embed
                 const embed = new EmbedBuilder()
-                    .setTitle("📎 New Attachment")
-                    .setImage(attachment.url)
+                    .setTitle("🎥 New Video Attachment")
+                    .setDescription(`${message.author} has sent a video in ${message.channel}`)
+                    .setImage(message.author.displayAvatarURL({ size: 512 })) // Use the generated thumbnail
                     .setFooter({ text: `Author: ${message.author.tag}` })
                     .setTimestamp();
 
-                generalChannel.send({ embeds: [embed] }).catch(console.error);
-            }
-        });
+                // Send the embed with the thumbnail
+                generalChannel.send({ embeds: [embed], files: [thumbnailAttachment] }).catch(console.error);
+
+                // Delete the thumbnail file after sending
+    } else {
+        // Handle non-video attachments (e.g., images)
+        const embed = new EmbedBuilder()
+            .setTitle("📎 New Attachment")
+            .setImage(attachment.url)
+            .setFooter({ text: `Author: ${message.author.tag}` })
+            .setTimestamp();
+
+        generalChannel.send({ embeds: [embed] }).catch(console.error);
+    }
+});
     }
 });
 
