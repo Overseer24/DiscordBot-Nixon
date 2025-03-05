@@ -1,16 +1,102 @@
 require("dotenv").config();
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require("discord.js");
-
+const fs = require("fs");
+const path = require("path");
+const { Collection } = require("discord.js");
+const { DisTube } = require("distube");
+const { YtDlpPlugin } = require("@distube/yt-dlp");
+const { SpotifyPlugin } = require("@distube/spotify");
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates],
     rest: {
         timeout: 30000, // Increase timeout to 30 seconds
     },
+
 });
+client.distube = new DisTube(client, {
+    emitNewSongOnly: true,
+    nsfw: true,
+    plugins: [
+        new SpotifyPlugin({
+            api: {
+                clientId: process.env.SPOTIFY_CLIENT_ID,
+                clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+            },
+        }),
+        new YtDlpPlugin()
+    ],
+});
+
+const status = queue =>
+    `Volume: \`${queue.volume}%\` |  Filter: \`${queue.filters.names.join(', ') || 'Inactive'}\` | Repeat: \`${queue.repeatMode ? (queue.repeatMode === 2 ? 'Queue' : 'Track') : 'Off'
+    }\` | Autoplay: \`${queue.autoplay ? 'On' : 'Off'}\``
+client.distube
+    .on('playSong', (queue, song) =>
+        queue.textChannel.send({
+            embeds: [new EmbedBuilder().setColor('#a200ff')
+                .setDescription(`🎶 | Playing: \`${song.name}\` - \`${song.formattedDuration}\`\nFrom: ${song.user
+                    }\n${status(queue)}`)]
+        })
+    )
+    .on('addSong', (queue, song) =>
+        queue.textChannel.send(
+            {
+                embeds: [new EmbedBuilder().setColor('#a200ff')
+                    .setDescription(`🎶 | Added \`${song.name}\` - \`${song.formattedDuration}\` to queue by: ${song.user}`)]
+            }
+        )
+    )
+    .on('addList', (queue, playlist) =>
+        queue.textChannel.send(
+            {
+                embeds: [new EmbedBuilder().setColor('#a200ff')
+                    .setDescription(`🎶 | Added from \`${playlist.name}\` : \`${playlist.songs.length
+                        } \` queue tracks; \n${status(queue)}`)]
+            }
+        )
+    )
+    .on('error', (channel, e) => {
+        if (channel) channel.send(`⛔ | Error: ${e.toString().slice(0, 1974)}`)
+        else console.error(e)
+    })
+    .on('empty', channel => channel.send({
+        embeds: [new EmbedBuilder().setColor("Red")
+            .setDescription('⛔ | The voice channel is empty! Leaving the channel...')]
+    }))
+    .on('searchNoResult', (message, query) =>
+        message.channel.send(
+            {
+                embeds: [new EmbedBuilder().setColor("Red")
+                    .setDescription('`⛔ | No results found for: \`${query}\`!`')]
+            })
+    )
+    .on('finish', queue => queue.textChannel.send({
+        embeds: [new EmbedBuilder().setColor('#a200ff')
+            .setDescription('🏁 | The queue is finished!')]
+    }))
+
 const messageMap = new Map();
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
 const GENERAL_CHANNEL_ID = process.env.GENERAL_CHANNELS_ID;
+
+client.commands = new Collection();
+
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith(".js"));
+for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+    client.commands.set(command.data.name, command);
+}
+
+const eventsPath = path.join(__dirname, "events");
+fs.readdirSync(eventsPath).forEach((file) => {
+    if (file.endsWith(".js")) {
+        const event = require(`./events/${file}`);
+        client.on(event.name, event.execute.bind(null, client));
+    }
+});
 
 client.on("messageCreate", async (message) => {
     // Check if the message is in the attachments channel and contains attachments
@@ -73,6 +159,28 @@ client.on("messageDelete", async (message) => {
 
         messageMap.delete(message.id); // Remove from map
     }
+});
+
+// client.on("interactionCreate", async (interaction) => {
+//     if(!interaction.isCommand()) return;
+
+//     if(interaction.commandName === "ping") {
+//         await interaction.reply({ content: "Pong!" });
+//     }
+
+//     if(interaction.commandName === "server") {
+//         await interaction.reply({ content: `Server name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}` });
+//     }
+
+//     if(interaction.commandName === "user") {
+//         await interaction.reply({ content: `Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}` });
+//     }
+// });
+
+
+client.distube.on("error", (channel, error) => {
+    console.error(`DisTube Error in channel ${channel.id}:`,);
+    console.error("Full error details:", error.message);
 });
 
 client.once("ready", () => {

@@ -10,8 +10,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.18.0",
+    "@distube/spotify": "^2.0.2",
+    "@distube/yt-dlp": "^2.0.1",
+    "@noble/ciphers": "^1.2.1",
     "discord.js": "^14.18.0",
+    "distube": "^5.0.6",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "formidable": "^3.5.2",
+    "superagent": "^10.1.1"
   }
 }

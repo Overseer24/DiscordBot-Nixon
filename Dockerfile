@@ -14,5 +14,8 @@ RUN npm install --production
 # Copy the rest of your bot's code
 COPY . .
 
+# Expose port (optional, but useful for debugging)
+EXPOSE 3000
+
 # Start the bot
 CMD ["node", "index.js"]
