@@ -6,6 +6,7 @@ const { Collection } = require("discord.js");
 const { DisTube } = require("distube");
 const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
+const { YouTubePlugin } = require("@distube/youtube");
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates],
@@ -19,62 +20,103 @@ client.distube = new DisTube(client, {
     nsfw: true,
     plugins: [
         new SpotifyPlugin({
-            api: {
+            api:{
                 clientId: process.env.SPOTIFY_CLIENT_ID,
-                clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-            },
+                clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+            }
         }),
-        new YtDlpPlugin()
+        new YtDlpPlugin(),
+        new YouTubePlugin()
     ],
 });
+client.distube.setMaxListeners(20); // Increase max listeners to 20
 
 const status = queue =>
-    `Volume: \`${queue.volume}%\` |  Filter: \`${queue.filters.names.join(', ') || 'Inactive'}\` | Repeat: \`${queue.repeatMode ? (queue.repeatMode === 2 ? 'Queue' : 'Track') : 'Off'
-    }\` | Autoplay: \`${queue.autoplay ? 'On' : 'Off'}\``
+    `🔊 **Volume:** \`${queue.volume}%\` | 🎚️ **Filter:** \`${queue.filters.names.join(', ') || 'Inactive'}\` | 🔁 **Repeat:** \`${queue.repeatMode ? (queue.repeatMode === 2 ? 'Queue' : 'Track') : 'Off'
+    }\` | 🤖 **Autoplay:** \`${queue.autoplay ? 'On' : 'Off'}\``;
+
 client.distube
-    .on('playSong', (queue, song) =>
-        queue.textChannel.send({
-            embeds: [new EmbedBuilder().setColor('#a200ff')
-                .setDescription(`🎶 | Playing: \`${song.name}\` - \`${song.formattedDuration}\`\nFrom: ${song.user
-                    }\n${status(queue)}`)]
-        })
-    )
+    .on('playSong', (queue, song) => {
+        if (queue.textChannel) {
+            queue.textChannel.send({
+                embeds: [new EmbedBuilder()
+                    .setColor('#a200ff')
+                    .setTitle('🎶 Now Playing')
+                    .setDescription(`**${song.name}** - \`${song.formattedDuration}\`\n\n👤 **Requested by:** ${song.user}\n\n${status(queue)}`)
+                    .setThumbnail(song.thumbnail)
+                    .setFooter({ text: 'Enjoy the music! 🎧' })]
+            });
+        } else {
+            console.error('Text channel not found for song playback');
+        }
+    })
     .on('addSong', (queue, song) =>
         queue.textChannel.send(
             {
-                embeds: [new EmbedBuilder().setColor('#a200ff')
-                    .setDescription(`🎶 | Added \`${song.name}\` - \`${song.formattedDuration}\` to queue by: ${song.user}`)]
+                embeds: [new EmbedBuilder()
+                    .setColor('#a200ff')
+                    .setTitle('🎶 Song Added to Queue')
+                    .setDescription(`**${song.name}** - \`${song.formattedDuration}\`\n\n👤 **Requested by:** ${song.user}`)
+                    .setThumbnail(song.thumbnail)
+                    .setFooter({ text: 'More tunes coming up! 🎶' })]
             }
         )
     )
     .on('addList', (queue, playlist) =>
         queue.textChannel.send(
             {
-                embeds: [new EmbedBuilder().setColor('#a200ff')
-                    .setDescription(`🎶 | Added from \`${playlist.name}\` : \`${playlist.songs.length
-                        } \` queue tracks; \n${status(queue)}`)]
+                embeds: [new EmbedBuilder()
+                    .setColor('#a200ff')
+                    .setTitle('🎶 Playlist Added to Queue')
+                    .setDescription(`**${playlist.name}** - \`${playlist.songs.length} tracks\`\n\n${status(queue)}`)
+                    .setThumbnail(playlist.thumbnail)
+                    .setFooter({ text: 'Let the music play! 🎵' })]
             }
         )
     )
     .on('error', (channel, e) => {
-        if (channel) channel.send(`⛔ | Error: ${e.toString().slice(0, 1974)}`)
-        else console.error(e)
+        if (channel && channel.send) {
+            channel.send({
+                embeds: [new EmbedBuilder()
+                    .setColor('Red')
+                    .setTitle('⛔ Error')
+                    .setDescription(`**Error:** ${e.toString().slice(0, 1974)}`)
+                    .setFooter({ text: 'Please try again later.' })]
+            });
+        } else {
+            console.error('Error: Unable to send message to channel:', e);
+        }
     })
-    .on('empty', channel => channel.send({
-        embeds: [new EmbedBuilder().setColor("Red")
-            .setDescription('⛔ | The voice channel is empty! Leaving the channel...')]
-    }))
+    .on('empty', channel => {
+        if (channel && channel.send) {
+            channel.send({
+                embeds: [new EmbedBuilder()
+                    .setColor('Red')
+                    .setTitle('⛔ Voice Channel Empty')
+                    .setDescription('The voice channel is empty! Leaving the channel...')
+                    .setFooter({ text: 'Goodbye for now! 👋' })]
+            });
+        } else {
+            console.error('Empty channel is not a valid TextChannel');
+        }
+    })
     .on('searchNoResult', (message, query) =>
         message.channel.send(
             {
-                embeds: [new EmbedBuilder().setColor("Red")
-                    .setDescription('`⛔ | No results found for: \`${query}\`!`')]
+                embeds: [new EmbedBuilder()
+                    .setColor('Red')
+                    .setTitle('⛔ No Results Found')
+                    .setDescription(`No results found for: **${query}**`)
+                    .setFooter({ text: 'Try a different search term.' })]
             })
     )
     .on('finish', queue => queue.textChannel.send({
-        embeds: [new EmbedBuilder().setColor('#a200ff')
-            .setDescription('🏁 | The queue is finished!')]
-    }))
+        embeds: [new EmbedBuilder()
+            .setColor('#a200ff')
+            .setTitle('🏁 Queue Finished')
+            .setDescription('The queue has ended. Thanks for listening!')
+            .setFooter({ text: 'Hope you enjoyed the music! 🎶' })]
+    }));
 
 const messageMap = new Map();
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;

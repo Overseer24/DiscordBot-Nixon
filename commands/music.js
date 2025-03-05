@@ -47,104 +47,94 @@ module.exports = {
 
         if (!client.distube) {
             embed.setColor('Red').setDescription("DisTube is not initialized in the bot!");
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed] });
         }
 
         if (!voiceChannel) {
             embed.setColor('Red').setDescription("You must be in a voice channel to use this command!");
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed] });
         }
 
         if (guild.members.me.voice.channelId && member.voice.channelId !== guild.members.me.voice.channelId) {
             embed.setColor('Red').setDescription(`You cannot use me because I'm already active in <#${guild.members.me.voice.channelId}>`);
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed] });
         }
 
         try {
+            await interaction.deferReply(); // Avoid timeout issues
+
             switch (subcommand) {
                 case 'play':
-                    if (!query) {
-                        embed.setColor('Red').setDescription("Please provide a song name, URL, or Spotify link!");
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
-                    }
+                    let query = options.getString("query").trim();
 
+                    // Remove playlist query if it's a YouTube URL
+                    query = query.replace(/&list=.*$/, "");
                     await client.distube.play(voiceChannel, query, { textChannel: channel, member: member });
-                    return interaction.reply({ content: 'Requesting the song...', ephemeral: true });
+                    embed.setColor('Green').setDescription(`🎵 Requesting the song: **${query}**`);
+                    return interaction.editReply({ embeds: [embed] });
 
                 case 'volume':
-                    if (!volume) {
-                        embed.setColor('Red').setDescription("Please provide a volume percentage!");
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
-                    }
-
                     await client.distube.setVolume(voiceChannel, volume);
-                    return interaction.reply({ content: `Setting the volume to ${volume}%`, ephemeral: true });
+                    embed.setColor('Blue').setDescription(`🔊 Setting volume to **${volume}%**`);
+                    return interaction.editReply({ embeds: [embed] });
 
-                case 'options':
+                case 'options': {
                     const queue = client.distube.getQueue(voiceChannel);
 
                     if (!queue) {
-                        embed.setColor('Red').setDescription("There is no queue in this server!");
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
+                        embed.setColor('Red').setDescription("❌ There is no queue in this server!");
+                        return interaction.editReply({ embeds: [embed] });
                     }
 
                     switch (option) {
                         case 'skip':
                             await queue.skip();
-                            embed.setColor('Blue').setDescription('Skipping the current song...');
+                            embed.setColor('Blue').setDescription('⏭ Skipping the current song...');
                             break;
 
                         case 'stop':
                             await queue.stop();
-                            embed.setColor('Blue').setDescription('Stopping the music...');
+                            embed.setColor('Blue').setDescription('⏹ Stopping the music...');
                             break;
 
                         case 'pause':
                             await queue.pause();
-                            embed.setColor('Blue').setDescription('Pausing the music...');
+                            embed.setColor('Blue').setDescription('⏸ Pausing the music...');
                             break;
 
                         case 'resume':
                             await queue.resume();
-                            embed.setColor('Blue').setDescription('Resuming the music...');
+                            embed.setColor('Blue').setDescription('▶ Resuming the music...');
                             break;
 
                         case 'queue':
-                            embed.setColor('Blue').setDescription(`Queue:\n${queue.songs.map((song, id) => `**${id + 1}**. [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join('\n')}`);
+                            embed.setColor('Blue').setTitle('🎶 Music Queue')
+                                .setDescription(queue.songs.map((song, id) => `**${id + 1}.** [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join('\n'));
                             break;
 
                         case 'loop-queue':
-                            if (queue.repeatMode === 1) {
-                                await queue.setRepeatMode(0);
-                                embed.setColor('Blue').setDescription('The track is not looped');
-                            } else {
-                                await queue.setRepeatMode(2);
-                                embed.setColor('Blue').setDescription('The track is looped');
-                            }
+                            queue.setRepeatMode(queue.repeatMode === 2 ? 0 : 2);
+                            embed.setColor('Blue').setDescription(queue.repeatMode === 2 ? '🔁 The queue is now looped!' : '🔁 Loop mode disabled!');
                             break;
 
                         case 'loop-all':
-                            if (queue.repeatMode === 0) {
-                                await queue.setRepeatMode(1);
-                                embed.setColor('Blue').setDescription('The queue is looped');
-                            } else {
-                                await queue.setRepeatMode(0);
-                                embed.setColor('Blue').setDescription('The queue is not looped');
-                            }
+                            queue.setRepeatMode(queue.repeatMode === 1 ? 0 : 1);
+                            embed.setColor('Blue').setDescription(queue.repeatMode === 1 ? '🔂 The current track is looped!' : '🔂 Loop mode disabled!');
                             break;
 
                         case 'autoplay':
                             const autoplay = queue.toggleAutoplay();
-                            embed.setColor('Blue').setDescription(autoplay ? 'Autoplay is enabled' : 'Autoplay is disabled');
+                            embed.setColor('Blue').setDescription(autoplay ? '🎵 Autoplay is **enabled**' : '🎵 Autoplay is **disabled**');
                             break;
                     }
 
-                    return interaction.reply({ embeds: [embed], ephemeral: true });
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
         } catch (error) {
-            console.error(error);
-            embed.setColor('Red').setDescription('An error occurred while processing the command!');
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            console.error("🚨 Error in music command:", error);
+            embed.setColor('Red').setDescription("⚠ An error occurred while processing your request.");
+            return interaction.editReply({ embeds: [embed] });
         }
     }
 };
