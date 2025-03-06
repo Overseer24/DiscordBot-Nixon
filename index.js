@@ -20,7 +20,7 @@ client.distube = new DisTube(client, {
     nsfw: true,
     plugins: [
         new SpotifyPlugin({
-            api:{
+            api: {
                 clientId: process.env.SPOTIFY_CLIENT_ID,
                 clientSecret: process.env.SPOTIFY_CLIENT_SECRET
             }
@@ -110,13 +110,35 @@ client.distube
                     .setFooter({ text: 'Try a different search term.' })]
             })
     )
-    .on('finish', queue => queue.textChannel.send({
-        embeds: [new EmbedBuilder()
-            .setColor('#a200ff')
-            .setTitle('🏁 Queue Finished')
-            .setDescription('The queue has ended. Thanks for listening!')
-            .setFooter({ text: 'Hope you enjoyed the music! 🎶' })]
-    }));
+    .on('finish', queue => {
+        const textChannel = queue.voiceChannel?.guild.channels.cache.get(queue.textChannel?.id);
+        if (textChannel && textChannel.send) {
+            textChannel.send({
+                embeds: [new EmbedBuilder()
+                    .setColor('#a200ff')
+                    .setTitle('🎶 Queue Finished')
+                    .setDescription('The queue has ended. Thanks for listening!')
+                    .setFooter({ text: 'More tunes coming up! 🎶' })]
+            });
+        }
+
+        setTimeout(() => {
+            if (!queue.song.length && queue.voiceChannel) {
+
+                queue.voiceChannel.leave();
+                queue.textChannel.send({
+                    embeds: [new EmbedBuilder()
+                        .setColor('#a200ff')
+                        .setTitle('🎶 Queue Ended')
+                        .setDescription('The queue has ended. Leaving the voice channel...')
+                        .setFooter({ text: 'Goodbye for now! 👋' })]
+                });
+
+            }
+
+        }, 60000);
+    }
+    );
 
 const messageMap = new Map();
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
