@@ -33,6 +33,10 @@ module.exports = {
                     { name: 'loop-all', value: 'loop-all' },
                     { name: 'autoplay', value: 'autoplay' },
                 ))),
+        // .addSubcommand(subcommand => subcommand.setName('filter').setDescription('Filter the music')
+        //         .addStringOption(option => option.setName('filter').setDescription('The filter to apply').setRequired(true)
+        //             .addChoices({ name: 'crossfade', value: 'crossfade' },)),
+        // ),
 
     async execute(interaction) {
         const { options, member, guild, channel } = interaction;
@@ -130,6 +134,26 @@ module.exports = {
 
                     return interaction.editReply({ embeds: [embed] });
                 }
+                // case 'filter': {
+                //     const queue = client.distube.getQueue(voiceChannel);
+                //     if (!queue) {
+                //         embed.setColor('Red').setDescription("❌ There is no queue in this server!");
+                //         return interaction.editReply({ embeds: [embed] });
+                //     }
+                //     const filter = options.getString("filter");
+                //     console.log("Filter:", filter);
+                //     switch (filter) {
+                //         case 'crossfade':
+                //             if (queue.filters.names.includes(filter)) {
+                //                 queue.filters.remove(filter); // Correct method to remove a filter
+                //                 embed.setColor('Blue').setDescription('🎵 Crossfade filter disabled!');
+                //             } else {
+                //                 queue.setFilter(filter); // Correct method to add a filter
+                //                 embed.setColor('Blue').setDescription('🎵 Crossfade filter enabled!');
+                //             }
+                //             break;
+                //     }
+                // }
             }
         } catch (error) {
             console.error("🚨 Error in music command:", error);

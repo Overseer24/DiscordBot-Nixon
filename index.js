@@ -7,6 +7,7 @@ const { DisTube } = require("distube");
 const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
+// const { SoundCloudPlugin } = require("@distube/soundcloud");
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates],
@@ -26,7 +27,8 @@ client.distube = new DisTube(client, {
             }
         }),
         new YtDlpPlugin(),
-        new YouTubePlugin()
+        new YouTubePlugin(),
+        // new SoundCloudPlugin()
     ],
 });
 client.distube.setMaxListeners(20); // Increase max listeners to 20
@@ -37,6 +39,10 @@ const status = queue =>
 
 client.distube
     .on('playSong', (queue, song) => {
+        // if (!queue.filters.names.includes('bassboost')) {
+        //     queue.filter.add('bassboost');
+        // }
+
         if (queue.textChannel) {
             queue.textChannel.send({
                 embeds: [new EmbedBuilder()
@@ -111,7 +117,7 @@ client.distube
             })
     )
     .on('finish', queue => {
-        const textChannel = queue.voiceChannel?.guild.channels.cache.get(queue.textChannel?.id);
+        const textChannel = queue.textChannel?.guild.channels.cache.get(queue.textChannel?.id);
         if (textChannel && textChannel.send) {
             textChannel.send({
                 embeds: [new EmbedBuilder()
@@ -123,22 +129,24 @@ client.distube
         }
 
         setTimeout(() => {
-            if (!queue.song.length && queue.voiceChannel) {
+            // FIX: Check if queue.songs is empty or undefined before accessing length
+            if ((!queue.songs || queue.songs.length === 0) && queue.voice) {
+                queue.voice.disconnect(); // FIX: Use queue.voice.disconnect() instead of queue.voiceChannel.leave()
 
-                queue.voiceChannel.leave();
-                queue.textChannel.send({
-                    embeds: [new EmbedBuilder()
-                        .setColor('#a200ff')
-                        .setTitle('🎶 Queue Ended')
-                        .setDescription('The queue has ended. Leaving the voice channel...')
-                        .setFooter({ text: 'Goodbye for now! 👋' })]
-                });
-
+                if (queue.textChannel) {
+                    queue.textChannel.send({
+                        embeds: [new EmbedBuilder()
+                            .setColor('#a200ff')
+                            .setTitle('🎶 Queue Ended')
+                            .setDescription('The queue has ended. Leaving the voice channel...')
+                            .setFooter({ text: 'Goodbye for now! 👋' })]
+                    });
+                }
             }
 
-        }, 60000);
-    }
-    );
+        }, 60000); // 1-minute timeout before leaving
+    });
+
 
 const messageMap = new Map();
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
