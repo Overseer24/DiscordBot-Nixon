@@ -22,6 +22,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "formidable": "^3.5.2",
+    "gtts": "^0.2.1",
     "superagent": "^10.1.1"
   }
 }

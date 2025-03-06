@@ -7,7 +7,9 @@ const { DisTube } = require("distube");
 const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
-const {SoundCloudPlugin} = require("@distube/soundcloud");
+const gTTS = require('gtts');
+const { createAudioPlayer, createAudioResource, getVoiceConnection, AudioPlayerStatus } = require('@discordjs/voice');
+
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates],
@@ -21,17 +23,17 @@ client.distube = new DisTube(client, {
     nsfw: true,
     plugins: [
         new SpotifyPlugin({
-            api:{
+            api: {
                 clientId: process.env.SPOTIFY_CLIENT_ID,
                 clientSecret: process.env.SPOTIFY_CLIENT_SECRET
             }
         }),
         new YtDlpPlugin(),
-        new YouTubePlugin(),
-        new SoundCloudPlugin()
+        new YouTubePlugin()
     ],
 });
 client.distube.setMaxListeners(20); // Increase max listeners to 20
+let disconnectTimeout;
 
 const status = queue =>
     `🔊 **Volume:** \`${queue.volume}%\` | 🎚️ **Filter:** \`${queue.filters.names.join(', ') || 'Inactive'}\` | 🔁 **Repeat:** \`${queue.repeatMode ? (queue.repeatMode === 2 ? 'Queue' : 'Track') : 'Off'
@@ -39,6 +41,8 @@ const status = queue =>
 
 client.distube
     .on('playSong', (queue, song) => {
+        console.log("Queue:!!!!!!!!", queue);
+        resetDisconnectTimer()
         if (queue.textChannel) {
             queue.textChannel.send({
                 embeds: [new EmbedBuilder()
@@ -51,8 +55,11 @@ client.distube
         } else {
             console.error('Text channel not found for song playback');
         }
+        
     })
-    .on('addSong', (queue, song) =>
+    .on('addSong', async (queue, song) => {
+        resetDisconnectTimer()
+
         queue.textChannel.send(
             {
                 embeds: [new EmbedBuilder()
@@ -63,8 +70,13 @@ client.distube
                     .setFooter({ text: 'More tunes coming up! 🎶' })]
             }
         )
-    )
-    .on('addList', (queue, playlist) =>
+
+        if (!queue.playing) {
+            await queue.play();
+        }
+    })
+    .on('addList', (queue, playlist) => {
+        resetDisconnectTimer()
         queue.textChannel.send(
             {
                 embeds: [new EmbedBuilder()
@@ -75,7 +87,7 @@ client.distube
                     .setFooter({ text: 'Let the music play! 🎵' })]
             }
         )
-    )
+    })
     .on('error', (channel, e) => {
         if (channel && channel.send) {
             channel.send({
@@ -114,7 +126,7 @@ client.distube
     )
     .on('finish', queue => {
         const textChannel = queue.voiceChannel?.guild.channels.cache.get(queue.textChannel?.id);
-        if(textChannel && textChannel.send) {
+        if (textChannel && textChannel.send) {
             textChannel.send({
                 embeds: [new EmbedBuilder()
                     .setColor('#a200ff')
@@ -124,23 +136,97 @@ client.distube
             });
         }
 
-        setTimeout(()=>{
-            if(!queue.song.length && queue.voiceChannel){
+        const connection = queue.voice.connection;
 
-                queue.voiceChannel.leave();
-                queue.textChannel.send({
-                    embeds: [new EmbedBuilder()
-                        .setColor('#a200ff')
-                        .setTitle('🎶 Queue Ended')
-                        .setDescription('The queue has ended. Leaving the voice channel...')
-                        .setFooter({ text: 'Goodbye for now! 👋' })]
-                });
-                
+        if (!connection) {
+            console.error("No active voice connection found.");
+            return;
+        }
+
+        // Disconnect after 1 minute if no new songs are added
+        disconnectTimeout = setTimeout(async () => {
+            console.log("No new songs, playing TTS...");
+            const ttsFile = 'tts.mp3';
+            if (!fs.existsSync(ttsFile)) {
+                console.error("TTS file not found:", ttsFile);
+                return;
             }
+            const player = createAudioPlayer();
+            const resource = createAudioResource(ttsFile);
 
-        }, 60000);
+            connection.subscribe(player);
+            player.play(resource);
+
+            player.on(AudioPlayerStatus.Idle, () => {
+                console.log("Finished playing TTS file.");
+                if (queue.voice.connection) {
+                    queue.voice.connection.destroy();
+                }
+
+            });  //
+
+        }, 30000);
+
+
+
+
+        // const connection = queue.voice.connection;
+
+        // if (!connection) {
+        //     console.error("No active voice connection found.");
+        //     return;
+        // }
+        // setTimeout(() => {
+
+        //     console.log("5 seconds passed, now playing TTS...");
+
+        //     // Check if TTS file exists
+        //     const ttsFile = 'tts.mp3';
+        //     if (!fs.existsSync(ttsFile)) {
+        //         console.error("TTS file not found:", ttsFile);
+        //         return;
+        //     }
+
+        //     const player = createAudioPlayer();
+        //     const resource = createAudioResource(ttsFile);
+
+        //     connection.subscribe(player);
+        //     player.play(resource);
+
+        //     player.on(AudioPlayerStatus.Idle, () => {
+        //         console.log("Finished playing TTS file.");
+        //     });  //
+
+        // }, 5000); // Wait 5 seconds before playing 
+        // console.log(queue.songs.length);
+
+
+
+        //     disconnectTimeout = setTimeout(() => {
+
+
+        //         if (queue.songs.length === 0 && queue.voice.connection) {
+        //             connection.destroy();
+        //             queue.textChannel.send({
+        //                 embeds: [new EmbedBuilder()
+        //                     .setColor('#a200ff')
+        //                     .setTitle('🎶 No song na?')
+        //                     .setImage('https://media1.tenor.com/m/GwTneAH7HnQAAAAd/trigun-trigun98.gif')
+        //                     .setDescription('UWUWUWUWUWUWUWUWUUWU')
+        //                     .setFooter({ text: 'Goodbye for now! 👋' })]
+        //             });
+        //         }
+        //     }, 30000);
+    });
+
+const resetDisconnectTimer = () => {
+    if (disconnectTimeout) {
+        clearTimeout(disconnectTimeout);
+        disconnectTimeout = null;
+        console.log("Disconnect timer reset! Bot will stay in the VC.");
     }
-    );
+};
+
 
 const messageMap = new Map();
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;

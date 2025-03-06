@@ -32,11 +32,28 @@ module.exports = {
                     { name: 'loop-queue', value: 'loop-queue' },
                     { name: 'loop-all', value: 'loop-all' },
                     { name: 'autoplay', value: 'autoplay' },
-                ))),
-        // .addSubcommand(subcommand => subcommand.setName('filter').setDescription('Filter the music')
-        //         .addStringOption(option => option.setName('filter').setDescription('The filter to apply').setRequired(true)
-        //             .addChoices({ name: 'crossfade', value: 'crossfade' },)),
-        // ),
+                )))
+        .addSubcommand(subcommand => subcommand.setName('filter').setDescription('Filter the music')
+            .addStringOption(option => option.setName('filter').setDescription('The filter to apply').setRequired(true)
+                .addChoices(
+                    { name: '3D', value: '3d' },
+                    { name: 'Bass Boost', value: 'bassboost' },
+                    { name: 'Echo', value: 'echo' },
+                    { name: 'Flanger', value: 'flanger' },
+                    { name: 'Gate', value: 'gate' },
+                    { name: 'Haas', value: 'haas' },
+                    { name: 'Karaoke', value: 'karaoke' },
+                    { name: 'Nightcore', value: 'nightcore' },
+                    { name: 'Reverse', value: 'reverse' },
+                    { name: 'Vaporwave', value: 'vaporwave' },
+                    { name: 'MCompand', value: 'mcompand' },
+                    { name: 'Phaser', value: 'phaser' },
+                    { name: 'Tremolo', value: 'tremolo' },
+                    { name: 'Surround', value: 'surround' },
+                    { name: 'Earwax', value: 'earwax' },
+                    { name: 'Clear', value: 'clear' }
+                ))
+        ),
 
     async execute(interaction) {
         const { options, member, guild, channel } = interaction;
@@ -70,10 +87,10 @@ module.exports = {
             switch (subcommand) {
                 case 'play':
                     let query = options.getString("query").trim();
+                    query = query.replace(/&list=.*$/, ""); // Remove playlist query to avoid issues
 
-                    // Remove playlist query if it's a YouTube URL
-                    query = query.replace(/&list=.*$/, "");
                     await client.distube.play(voiceChannel, query, { textChannel: channel, member: member });
+
                     embed.setColor('Green').setDescription(`🎵 Requesting the song: **${query}**`);
                     return interaction.editReply({ embeds: [embed] });
 
@@ -89,13 +106,22 @@ module.exports = {
                         embed.setColor('Red').setDescription("❌ There is no queue in this server!");
                         return interaction.editReply({ embeds: [embed] });
                     }
-
                     switch (option) {
                         case 'skip':
-                            await queue.skip();
-                            embed.setColor('Blue').setDescription('⏭ Skipping the current song...');
-                            break;
+                            if (!queue || !queue.songs.length) {
+                                embed.setColor('Red').setDescription("❌ There are no songs to skip!");
+                                return interaction.editReply({ embeds: [embed] });
+                            }
 
+                            if (queue.songs.length > 1) {
+                                await queue.skip();
+                                embed.setColor('Blue').setDescription(`⏭ Skipped to the next song: **${queue.songs[1].name}**`);
+                            } else {
+                                await queue.stop();
+                                embed.setColor('Blue').setDescription('⏹ No more songs in the queue. Stopping playback.');
+                            }
+
+                            return interaction.editReply({ embeds: [embed] });
                         case 'stop':
                             await queue.stop();
                             embed.setColor('Blue').setDescription('⏹ Stopping the music...');
@@ -134,26 +160,43 @@ module.exports = {
 
                     return interaction.editReply({ embeds: [embed] });
                 }
-                // case 'filter': {
-                //     const queue = client.distube.getQueue(voiceChannel);
-                //     if (!queue) {
-                //         embed.setColor('Red').setDescription("❌ There is no queue in this server!");
-                //         return interaction.editReply({ embeds: [embed] });
-                //     }
-                //     const filter = options.getString("filter");
-                //     console.log("Filter:", filter);
-                //     switch (filter) {
-                //         case 'crossfade':
-                //             if (queue.filters.names.includes(filter)) {
-                //                 queue.filters.remove(filter); // Correct method to remove a filter
-                //                 embed.setColor('Blue').setDescription('🎵 Crossfade filter disabled!');
-                //             } else {
-                //                 queue.setFilter(filter); // Correct method to add a filter
-                //                 embed.setColor('Blue').setDescription('🎵 Crossfade filter enabled!');
-                //             }
-                //             break;
-                //     }
-                // }
+                case 'filter': {
+                    const queue = client.distube.getQueue(voiceChannel);
+                    if (!queue) {
+                        embed.setColor('Red').setDescription("❌ There is no queue to filter in this server!");
+                        return interaction.editReply({ embeds: [embed] });
+                    }
+                    const filter = options.getString("filter");
+                    console.log("Filter:", filter);
+                    const availableFilters = [
+                        '3d', 'bassboost', 'echo', 'flanger', 'gate', 'haas',
+                        'karaoke', 'nightcore', 'reverse', 'vaporwave', 'mcompand',
+                        'phaser', 'tremolo', 'surround', 'earwax', 'clear'
+                    ];
+                    if (filter === 'clear') {
+                        if (queue.filters.names.length === 0) {
+                            embed.setColor('Red').setDescription("❌ No filters are currently active!");
+                        } else {
+                            queue.filters.clear(); // Clears all filters
+                            embed.setColor('Blue').setDescription("🎵 All filters have been cleared!");
+                        }
+                        return interaction.editReply({ embeds: [embed] });
+                    }
+
+                    if (!availableFilters.includes(filter)) {
+                        embed.setColor('Red').setDescription("❌ Invalid filter provided!");
+                        return interaction.editReply({ embeds: [embed] });
+                    }
+
+                    if (queue.filters.names.includes(filter)) {
+                        queue.filters.remove(filter);
+                        embed.setColor('Blue').setDescription(`🎵 ${filter} filter disabled!`);
+                    } else {
+                        queue.filters.add(filter);
+                        embed.setColor('Blue').setDescription(`🎵 ${filter} filter enabled!`);
+                    }
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
         } catch (error) {
             console.error("🚨 Error in music command:", error);
