@@ -144,7 +144,7 @@ client.distube
         }
 
         // Disconnect after 1 minute if no new songs are added
-        disconnectTimeout = setTimeout(async () => {
+        disconnectTimeout = setTimeout(() => {
             console.log("No new songs, playing TTS...");
             const ttsFile = 'tts.mp3';
             if (!fs.existsSync(ttsFile)) {
