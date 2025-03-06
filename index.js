@@ -41,7 +41,7 @@ const status = queue =>
 
 client.distube
     .on('playSong', (queue, song) => {
-        console.log("Queue:!!!!!!!!", queue);
+
         resetDisconnectTimer()
         if (queue.textChannel) {
             queue.textChannel.send({
@@ -55,7 +55,7 @@ client.distube
         } else {
             console.error('Text channel not found for song playback');
         }
-        
+
     })
     .on('addSong', async (queue, song) => {
         resetDisconnectTimer()

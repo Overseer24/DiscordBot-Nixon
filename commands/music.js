@@ -168,11 +168,6 @@ module.exports = {
                     }
                     const filter = options.getString("filter");
                     console.log("Filter:", filter);
-                    const availableFilters = [
-                        '3d', 'bassboost', 'echo', 'flanger', 'gate', 'haas',
-                        'karaoke', 'nightcore', 'reverse', 'vaporwave', 'mcompand',
-                        'phaser', 'tremolo', 'surround', 'earwax', 'clear'
-                    ];
                     if (filter === 'clear') {
                         if (queue.filters.names.length === 0) {
                             embed.setColor('Red').setDescription("❌ No filters are currently active!");
@@ -182,20 +177,37 @@ module.exports = {
                         }
                         return interaction.editReply({ embeds: [embed] });
                     }
-
+                    const availableFilters = [
+                        '3d', 'bassboost', 'echo', 'flanger', 'gate', 'haas',
+                        'karaoke', 'nightcore', 'reverse', 'vaporwave', 'mcompand',
+                        'phaser', 'tremolo', 'surround', 'earwax', 'clear'
+                    ];
                     if (!availableFilters.includes(filter)) {
                         embed.setColor('Red').setDescription("❌ Invalid filter provided!");
                         return interaction.editReply({ embeds: [embed] });
                     }
+                    try {
+                        if (queue.filters.names.includes(filter)) {
+                            queue.filters.remove(filter);
+                            embed.setColor('Blue').setDescription(`🎵 ${filter} filter disabled!`);
+                        } else {
+                            queue.filters.add(filter);
+                            embed.setColor('Blue').setDescription(`🎵 ${filter} filter enabled!`);
+                        }
+                        return interaction.editReply({ embeds: [embed] });
+                    } catch (error) {
+                        console.error(`Error applying filter: ${error}`);
+                        embed.setColor('Red').setDescription("❌ An error occurred while applying the filter!");
+                        await interaction.editReply({ embeds: [embed] });
+                        if (queue.songs.length > 1) {
+                            queue.skip();
+                        } else {
+                            queue.stop();
+                        }
 
-                    if (queue.filters.names.includes(filter)) {
-                        queue.filters.remove(filter);
-                        embed.setColor('Blue').setDescription(`🎵 ${filter} filter disabled!`);
-                    } else {
-                        queue.filters.add(filter);
-                        embed.setColor('Blue').setDescription(`🎵 ${filter} filter enabled!`);
                     }
-                    return interaction.editReply({ embeds: [embed] });
+
+
                 }
             }
         } catch (error) {
