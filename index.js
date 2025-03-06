@@ -7,7 +7,7 @@ const { DisTube } = require("distube");
 const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
-// const { SoundCloudPlugin } = require("@distube/soundcloud");
+const {SoundCloudPlugin} = require("@distube/soundcloud");
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates],
@@ -21,14 +21,14 @@ client.distube = new DisTube(client, {
     nsfw: true,
     plugins: [
         new SpotifyPlugin({
-            api: {
+            api:{
                 clientId: process.env.SPOTIFY_CLIENT_ID,
                 clientSecret: process.env.SPOTIFY_CLIENT_SECRET
             }
         }),
         new YtDlpPlugin(),
         new YouTubePlugin(),
-        // new SoundCloudPlugin()
+        new SoundCloudPlugin()
     ],
 });
 client.distube.setMaxListeners(20); // Increase max listeners to 20
@@ -39,10 +39,6 @@ const status = queue =>
 
 client.distube
     .on('playSong', (queue, song) => {
-        // if (!queue.filters.names.includes('bassboost')) {
-        //     queue.filter.add('bassboost');
-        // }
-
         if (queue.textChannel) {
             queue.textChannel.send({
                 embeds: [new EmbedBuilder()
@@ -117,8 +113,8 @@ client.distube
             })
     )
     .on('finish', queue => {
-        const textChannel = queue.textChannel?.guild.channels.cache.get(queue.textChannel?.id);
-        if (textChannel && textChannel.send) {
+        const textChannel = queue.voiceChannel?.guild.channels.cache.get(queue.textChannel?.id);
+        if(textChannel && textChannel.send) {
             textChannel.send({
                 embeds: [new EmbedBuilder()
                     .setColor('#a200ff')
@@ -128,25 +124,23 @@ client.distube
             });
         }
 
-        setTimeout(() => {
-            // FIX: Check if queue.songs is empty or undefined before accessing length
-            if ((!queue.songs || queue.songs.length === 0) && queue.voice) {
-                queue.voice.disconnect(); // FIX: Use queue.voice.disconnect() instead of queue.voiceChannel.leave()
+        setTimeout(()=>{
+            if(!queue.song.length && queue.voiceChannel){
 
-                if (queue.textChannel) {
-                    queue.textChannel.send({
-                        embeds: [new EmbedBuilder()
-                            .setColor('#a200ff')
-                            .setTitle('🎶 Queue Ended')
-                            .setDescription('The queue has ended. Leaving the voice channel...')
-                            .setFooter({ text: 'Goodbye for now! 👋' })]
-                    });
-                }
+                queue.voiceChannel.leave();
+                queue.textChannel.send({
+                    embeds: [new EmbedBuilder()
+                        .setColor('#a200ff')
+                        .setTitle('🎶 Queue Ended')
+                        .setDescription('The queue has ended. Leaving the voice channel...')
+                        .setFooter({ text: 'Goodbye for now! 👋' })]
+                });
+                
             }
 
-        }, 60000); // 1-minute timeout before leaving
-    });
-
+        }, 60000);
+    }
+    );
 
 const messageMap = new Map();
 const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
