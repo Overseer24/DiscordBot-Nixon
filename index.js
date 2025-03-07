@@ -7,6 +7,7 @@ const { DisTube } = require("distube");
 const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
+const { SoundCloudPlugin } = require("@distube/soundcloud");
 const gTTS = require('gtts');
 const { createAudioPlayer, createAudioResource, getVoiceConnection, AudioPlayerStatus } = require('@discordjs/voice');
 
@@ -29,7 +30,8 @@ client.distube = new DisTube(client, {
             }
         }),
         new YtDlpPlugin(),
-        new YouTubePlugin()
+        new YouTubePlugin(),
+        new SoundCloudPlugin()
     ],
 });
 client.distube.setMaxListeners(20); // Increase max listeners to 20
@@ -167,56 +169,6 @@ client.distube
 
         }, 30000);
 
-
-
-
-        // const connection = queue.voice.connection;
-
-        // if (!connection) {
-        //     console.error("No active voice connection found.");
-        //     return;
-        // }
-        // setTimeout(() => {
-
-        //     console.log("5 seconds passed, now playing TTS...");
-
-        //     // Check if TTS file exists
-        //     const ttsFile = 'tts.mp3';
-        //     if (!fs.existsSync(ttsFile)) {
-        //         console.error("TTS file not found:", ttsFile);
-        //         return;
-        //     }
-
-        //     const player = createAudioPlayer();
-        //     const resource = createAudioResource(ttsFile);
-
-        //     connection.subscribe(player);
-        //     player.play(resource);
-
-        //     player.on(AudioPlayerStatus.Idle, () => {
-        //         console.log("Finished playing TTS file.");
-        //     });  //
-
-        // }, 5000); // Wait 5 seconds before playing 
-        // console.log(queue.songs.length);
-
-
-
-        //     disconnectTimeout = setTimeout(() => {
-
-
-        //         if (queue.songs.length === 0 && queue.voice.connection) {
-        //             connection.destroy();
-        //             queue.textChannel.send({
-        //                 embeds: [new EmbedBuilder()
-        //                     .setColor('#a200ff')
-        //                     .setTitle('🎶 No song na?')
-        //                     .setImage('https://media1.tenor.com/m/GwTneAH7HnQAAAAd/trigun-trigun98.gif')
-        //                     .setDescription('UWUWUWUWUWUWUWUWUUWU')
-        //                     .setFooter({ text: 'Goodbye for now! 👋' })]
-        //             });
-        //         }
-        //     }, 30000);
     });
 
 const resetDisconnectTimer = () => {
@@ -313,21 +265,7 @@ client.on("messageDelete", async (message) => {
     }
 });
 
-// client.on("interactionCreate", async (interaction) => {
-//     if(!interaction.isCommand()) return;
 
-//     if(interaction.commandName === "ping") {
-//         await interaction.reply({ content: "Pong!" });
-//     }
-
-//     if(interaction.commandName === "server") {
-//         await interaction.reply({ content: `Server name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}` });
-//     }
-
-//     if(interaction.commandName === "user") {
-//         await interaction.reply({ content: `Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}` });
-//     }
-// });
 
 
 client.distube.on("error", (channel, error) => {
