@@ -10,22 +10,45 @@ const rest = new REST({ version: '10' }).setToken(botToken);
 
 const commands = [];
 
-const commandPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync(commandPath).filter(file => file.endsWith(".js"));
+// const commandPath = path.join(__dirname, "commands");
+// const commandFiles = fs.readdirSync(commandPath).
 
-for (const file of commandFiles) {
-    const filePath = path.join(commandPath, file);
-    const command = require(filePath);
-    commands.push(command.data.toJSON());
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs.readdirSync("./commands")
+
+for (const fileOrFolder of commandFiles) {
+    const fullPath = path.join(commandsPath, fileOrFolder);
+    if (fs.statSync(fullPath).isDirectory()) {
+        const subFiles = fs.readdirSync(fullPath).filter(file => file.endsWith(".js"));
+
+        for (const file of subFiles) {
+            const filePath = path.join(fullPath, file);
+            const command = require(filePath);
+            if ('data' in command && 'execute' in command) {
+                commands.push(command.data.toJSON());
+            } else {
+                console.log(`Command ${file} is missing 'data' or 'execute'`);
+            }
+        }
+    }
+    else if (fileOrFolder.endsWith(".js")) {
+        const command = require(fullPath);
+        if ('data' in command && 'execute' in command) {
+            commands.push(command.data.toJSON());
+        } else {
+            console.log(`Command ${file} is missing 'data' or 'execute'`);
+        }
+    }
 }
-// console.log(commands);
+
+
 
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
 
         await rest.put(
-            Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID,process.env.DESQ_SERVER_ID),
+            Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, process.env.DESQ_SERVER_ID),
             { body: commands },
         );
 

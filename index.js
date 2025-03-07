@@ -185,13 +185,32 @@ const ATTACHMENTS_CHANNEL_ID = process.env.ATTACHMENT_CHANNELS_ID;
 const GENERAL_CHANNEL_ID = process.env.GENERAL_CHANNELS_ID;
 
 client.commands = new Collection();
-
 const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith(".js"));
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    client.commands.set(command.data.name, command);
+const commandFiles = fs.readdirSync("./commands")
+
+for (const fileOrFolder of commandFiles) {
+    const fullPath = path.join(commandsPath, fileOrFolder);
+    if (fs.statSync(fullPath).isDirectory()) {
+        const subFiles = fs.readdirSync(fullPath).filter(file => file.endsWith(".js"));
+
+        for (const file of subFiles) {
+            const filePath = path.join(fullPath, file);
+            const command = require(filePath);
+            if ('data' in command && 'execute' in command) {
+                client.commands.set(command.data.name, command);
+            } else {
+                console.log(`Command ${file} is missing 'data' or 'execute'`);
+            }
+        }
+    }
+    else if (fileOrFolder.endsWith(".js")) {
+        const command = require(fullPath);
+        if ('data' in command && 'execute' in command) {
+            client.commands.set(command.data.name, command);
+        } else {
+            console.log(`Command ${file} is missing 'data' or 'execute'`);
+        }
+    }
 }
 
 const eventsPath = path.join(__dirname, "events");

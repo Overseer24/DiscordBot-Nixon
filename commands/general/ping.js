@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder} = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -12,12 +12,8 @@ module.exports = {
             .setTitle("PPPPPPOOOONG")
             .setDescription(`UGHHH`)
             .setImage(gifURL);
+        await interaction.deferReply();
+        return interaction.editReply({ embeds: [embed] });
 
-            if (interaction.replied || interaction.deferred) {
-                return interaction.editReply({ embeds: [embed] }); // Use editReply if already replied/deferred
-            } else {
-                return interaction.reply({ embeds: [embed] }); // Use reply if not yet replied/deferred
-            }
-       
     }
 };
