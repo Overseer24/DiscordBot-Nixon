@@ -16,7 +16,7 @@ module.exports = {
             if (interaction.replied || interaction.deferred) {
                 await interaction.editReply({ content: "❌ There was an error while executing this command!" });
             } else {
-                await interaction.reply({ content: "❌ There was an error while executing this command!", ephemeral: true });
+                await interaction.reply({ content: "❌ There was an error while executing this command!",  flags: MessageFlags.Ephemeral });
             }
         }
     }

@@ -14,6 +14,14 @@ module.exports = {
                 )
         )
         .addSubcommand(subcommand =>
+            subcommand.setName("remove-queue")
+                .setDescription("Removes a song from the queue")
+                .addIntegerOption(option =>
+                    option.setName("position")
+                        .setDescription("The position of the song to remove")
+                        .setRequired(true))
+        )
+        .addSubcommand(subcommand =>
             subcommand.setName('volume')
                 .setDescription('Set the volume of the music')
                 .addNumberOption(option => option.setName('percentage')
@@ -99,6 +107,31 @@ module.exports = {
                     embed.setColor('Blue').setDescription(`🔊 Setting volume to **${volume}%**`);
                     return interaction.editReply({ embeds: [embed] });
 
+                // case 'remove-queue':
+                //     const queue = client.distube.getQueue(voiceChannel);
+                //     console.log("Queue:", queue);
+                //     if (!queue) {
+                //         embed.setColor('Red').setDescription("❌ There are no songs in the queue!");
+                //         return interaction.editReply({ embeds: [embed] });
+                //     }
+                    // const position = options.getInteger("position") - 1;
+                    // if (position < 0 || position >= queue.songs.length) // Check if the position is valid
+                    // {
+                    //     embed.setColor('Red').setDescription("❌ Invalid position provided!");
+                    //     return interaction.editReply({ embeds: [embed] });
+                    // }
+                    // try {
+                    //     const removedSong = queue.songs.splice(position, 1);
+                    //     embed.setColor('Blue').setDescription(`🗑 Removed the song: **${removedSong[0].name}** from the queue!`);
+                    //     return interaction.editReply({ embeds: [embed] });
+                    // } catch (error) {
+                    //     console.error(`Error removing song from queue: ${error}`);
+                    //     embed.setColor('Red').setDescription("❌ An error occurred while removing the song from the queue!");
+                    //     return interaction.editReply({ embeds: [embed] });
+                    // }
+
+
+
                 case 'options': {
                     const queue = client.distube.getQueue(voiceChannel);
 
@@ -123,6 +156,8 @@ module.exports = {
 
                             return interaction.editReply({ embeds: [embed] });
                         case 'stop':
+                            //log what type of event
+                        
                             await queue.stop();
                             embed.setColor('Blue').setDescription('⏹ Stopping the music...');
                             break;
@@ -138,8 +173,13 @@ module.exports = {
                             break;
 
                         case 'queue':
-                            embed.setColor('Blue').setTitle('🎶 Music Queue')
-                                .setDescription(queue.songs.map((song, id) => `**${id + 1}.** [${song.name}](${song.url}) - \`${song.formattedDuration}\``).join('\n'));
+                            embed.setColor('Blue')
+                                .setTitle('🎶 Music Queue')
+                                .setDescription(queue.songs.map((song, id) => {
+                                    return id === 0
+                                        ? `**${id + 1}.** [${song.name}](${song.url}) - \`${song.formattedDuration}\` **(Currently Playing 🎵)**`
+                                        : `**${id + 1}.** [${song.name}](${song.url}) - \`${song.formattedDuration}\``;
+                                }).join('\n'));
                             break;
 
                         case 'loop-queue':

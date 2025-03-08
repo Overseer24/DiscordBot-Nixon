@@ -7,31 +7,35 @@ const { DisTube } = require("distube");
 const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
-const { SoundCloudPlugin } = require("@distube/soundcloud");
-const gTTS = require('gtts');
-const { createAudioPlayer, createAudioResource, getVoiceConnection, AudioPlayerStatus } = require('@discordjs/voice');
+process.env.FFMPEG_PATH = require('ffmpeg-static');
+// const { SoundCloudPlugin } = require("@distube/soundcloud");
+// const gTTS = require('gtts');
+// const { createAudioPlayer, createAudioResource, getVoiceConnection, AudioPlayerStatus } = require('@discordjs/voice');
 
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates],
-    rest: {
-        timeout: 30000, // Increase timeout to 30 seconds
-    },
 
 });
 client.distube = new DisTube(client, {
-    emitNewSongOnly: true,
-    nsfw: true,
+    // leaveOnEmpty: true,
+    // leaveOnFinish: false,
+    // leaveOnStop: true,
+    // emitNewSongOnly: true,
+
     plugins: [
-        new SpotifyPlugin({
+        new SpotifyPlugin(
+            {
             api: {
                 clientId: process.env.SPOTIFY_CLIENT_ID,
                 clientSecret: process.env.SPOTIFY_CLIENT_SECRET
             }
-        }),
-        new YtDlpPlugin(),
+        }
+    ),
+        
         new YouTubePlugin(),
-        new SoundCloudPlugin()
+        // new SoundCloudPlugin(),
+        new YtDlpPlugin()
     ],
 });
 client.distube.setMaxListeners(20); // Increase max listeners to 20
@@ -43,8 +47,15 @@ const status = queue =>
 
 client.distube
     .on('playSong', (queue, song) => {
-
         resetDisconnectTimer()
+        console.log("🎵 Now Playing:", song.name, "| Duration:", song.formattedDuration);
+        console.log("Queue status:", {
+            playing: queue.playing,
+            songsLeft: queue.songs.length,
+            volume: queue.volume,
+            repeatMode: queue.repeatMode,
+            autoplay: queue.autoplay
+        });
         if (queue.textChannel) {
             queue.textChannel.send({
                 embeds: [new EmbedBuilder()
@@ -73,9 +84,9 @@ client.distube
             }
         )
 
-        if (!queue.playing) {
-            await queue.play();
-        }
+        // if (!queue.playing) {
+        //     await queue.play();
+        // }
     })
     .on('addList', (queue, playlist) => {
         resetDisconnectTimer()
@@ -91,16 +102,19 @@ client.distube
         )
     })
     .on('error', (channel, e) => {
-        if (channel && channel.send) {
-            channel.send({
-                embeds: [new EmbedBuilder()
-                    .setColor('Red')
-                    .setTitle('⛔ Error')
-                    .setDescription(`**Error:** ${e.toString().slice(0, 1974)}`)
-                    .setFooter({ text: 'Please try again later.' })]
-            });
-        } else {
-            console.error('Error: Unable to send message to channel:', e);
+        console.error("Tanaefgdaasd foadsnf:", channel);
+        console.error("Error Biatch:", e); // This will be an Error object
+        if (channel) {
+            // channel.send({
+            //     embeds: [
+            //         new EmbedBuilder()
+            //             .setColor('Red')
+            //             .setTitle('⛔ Error')
+            //             .setDescription(`⚠️ **An error occurred while playing a song:**\n\`${e.message}\``)
+            //             .setFooter({ text: 'Try another song or check the bot logs.' })
+            //     ]
+            // }).catch(console.error);
+            console.log("Error L:", e)
         }
     })
     .on('empty', channel => {
@@ -145,7 +159,7 @@ client.distube
             return;
         }
 
-        // Disconnect after 1 minute if no new songs are added
+        // Disconnect after 30 sec if no new songs are added
         disconnectTimeout = setTimeout(() => {
             console.log("No new songs, playing TTS...");
             const ttsFile = 'tts.mp3';
@@ -173,11 +187,15 @@ client.distube
 
 const resetDisconnectTimer = () => {
     if (disconnectTimeout) {
+        console.log("🛑 Clearing previous disconnect timeout.");
         clearTimeout(disconnectTimeout);
         disconnectTimeout = null;
-        console.log("Disconnect timer reset! Bot will stay in the VC.");
+    } else {
+        console.log("✅ No active disconnect timeout to clear.");
     }
+    console.log("🔄 Disconnect timer reset! Bot will stay in the VC.");
 };
+
 
 
 const messageMap = new Map();
@@ -287,10 +305,10 @@ client.on("messageDelete", async (message) => {
 
 
 
-client.distube.on("error", (channel, error) => {
-    console.error(`DisTube Error in channel ${channel.id}:`,);
-    console.error("Full error details:", error.message);
-});
+// client.distube.on("error", (channel, error) => {
+//     console.error(`DisTube Error in channel ${channel.id}:`,);
+//     console.error("Full error details:", error);
+// });
 
 client.once("ready", () => {
     console.log(`✅ Logged in as ${client.user.tag}`);
