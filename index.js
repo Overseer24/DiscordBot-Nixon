@@ -26,13 +26,13 @@ client.distube = new DisTube(client, {
     plugins: [
         new SpotifyPlugin(
             {
-            api: {
-                clientId: process.env.SPOTIFY_CLIENT_ID,
-                clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+                api: {
+                    clientId: process.env.SPOTIFY_CLIENT_ID,
+                    clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+                }
             }
-        }
-    ),
-        
+        ),
+
         new YouTubePlugin(),
         // new SoundCloudPlugin(),
         new YtDlpPlugin()
@@ -102,18 +102,17 @@ client.distube
         )
     })
     .on('error', (channel, e) => {
-        console.error("Tanaefgdaasd foadsnf:", channel);
-        console.error("Error Biatch:", e); // This will be an Error object
+
         if (channel) {
-            // channel.send({
-            //     embeds: [
-            //         new EmbedBuilder()
-            //             .setColor('Red')
-            //             .setTitle('⛔ Error')
-            //             .setDescription(`⚠️ **An error occurred while playing a song:**\n\`${e.message}\``)
-            //             .setFooter({ text: 'Try another song or check the bot logs.' })
-            //     ]
-            // }).catch(console.error);
+            channel.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('Red')
+                        .setTitle('⛔ Error')
+                        .setDescription(`⚠️ **An error occurred while playing a song:**\n\`${e.message}\``)
+                        .setFooter({ text: 'Try another song or check the bot logs.' })
+                ]
+            }).catch(console.error);
             console.log("Error L:", e)
         }
     })
