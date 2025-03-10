@@ -3,7 +3,7 @@ const { MessageFlags } = require("discord.js");
 module.exports = {
     name: "interactionCreate",
     async execute(client, interaction) {
-        if (!interaction.isCommand()) return;
+        if (!interaction.isChatInputCommand()) return;
 
         const command = client.commands.get(interaction.commandName);
         if (!command) {

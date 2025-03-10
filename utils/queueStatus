@@ -1,0 +1,3 @@
+module.exports = (queue) => {
+    return `🔊 **Volume:** \`${queue.volume}%\` | 🎚️ **Filter:** \`${queue.filters.names.length ? queue.filters.names.join(", ") : "Inactive"}\` | 🔁 **Repeat:** \`${queue.repeatMode ? (queue.repeatMode === 2 ? "Queue" : "Track") : "Off"}\` | 🤖 **Autoplay:** \`${queue.autoplay ? "On" : "Off"}\``;
+};

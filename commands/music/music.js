@@ -14,6 +14,10 @@ module.exports = {
                 )
         )
         .addSubcommand(subcommand =>
+            subcommand.setName("exit")
+                .setDescription("Exits the voice channel")
+        )
+        .addSubcommand(subcommand =>
             subcommand.setName("remove-queue")
                 .setDescription("Removes a song from the queue")
                 .addIntegerOption(option =>
@@ -107,30 +111,33 @@ module.exports = {
                     embed.setColor('Blue').setDescription(`🔊 Setting volume to **${volume}%**`);
                     return interaction.editReply({ embeds: [embed] });
 
-                // case 'remove-queue':
-                //     const queue = client.distube.getQueue(voiceChannel);
-                //     console.log("Queue:", queue);
-                //     if (!queue) {
-                //         embed.setColor('Red').setDescription("❌ There are no songs in the queue!");
-                //         return interaction.editReply({ embeds: [embed] });
-                //     }
-                    // const position = options.getInteger("position") - 1;
-                    // if (position < 0 || position >= queue.songs.length) // Check if the position is valid
-                    // {
-                    //     embed.setColor('Red').setDescription("❌ Invalid position provided!");
-                    //     return interaction.editReply({ embeds: [embed] });
-                    // }
-                    // try {
-                    //     const removedSong = queue.songs.splice(position, 1);
-                    //     embed.setColor('Blue').setDescription(`🗑 Removed the song: **${removedSong[0].name}** from the queue!`);
-                    //     return interaction.editReply({ embeds: [embed] });
-                    // } catch (error) {
-                    //     console.error(`Error removing song from queue: ${error}`);
-                    //     embed.setColor('Red').setDescription("❌ An error occurred while removing the song from the queue!");
-                    //     return interaction.editReply({ embeds: [embed] });
-                    // }
+                case 'remove-queue':
+                    const queue = client.distube.getQueue(voiceChannel);
+                    if (!queue) {
+                        embed.setColor('Red').setDescription("❌ There are no songs in the queue!");
+                        return interaction.editReply({ embeds: [embed] });
+                    }
+                    const songs = queue.songs;
 
+                    const position = options.getInteger("position") - 2;
+                    if (position < 0 || position >= queue.songs.length) // Check if the position is valid
+                    {
+                        embed.setColor('Red').setDescription("❌ Invalid position provided!");
+                        return interaction.editReply({ embeds: [embed] });
+                    }
+                    try {
+                        // console.log("Removing song at position:", position);
+                        // console.log("Song to remove:", songs[position]);
 
+                        const removedSong = songs.splice(position, 1);
+                        // queue.remove(position);
+                        embed.setColor('Blue').setDescription(`🗑 Removed the song: **${removedSong[0].name}** from the queue`)
+                    } catch (error) {
+                        // console.error(`Error removing song: ${error}`);
+                        embed.setColor('Red').setDescription("❌ An error occurred while removing the song!");
+                    }
+
+                    return interaction.editReply({ embeds: [embed] });
 
                 case 'options': {
                     const queue = client.distube.getQueue(voiceChannel);
@@ -157,7 +164,7 @@ module.exports = {
                             return interaction.editReply({ embeds: [embed] });
                         case 'stop':
                             //log what type of event
-                        
+
                             await queue.stop();
                             embed.setColor('Blue').setDescription('⏹ Stopping the music...');
                             break;
@@ -173,13 +180,16 @@ module.exports = {
                             break;
 
                         case 'queue':
+                            const currentSong = queue.songs[0];
+                            const queueString = queue.songs.slice(1).map((song, id) => {
+                                return `**${id + 1}.** [${song.name}] - \`${song.formattedDuration}\` - Requested by: ${song.user}`;
+                            }).join('\n');
+
                             embed.setColor('Blue')
                                 .setTitle('🎶 Music Queue')
-                                .setDescription(queue.songs.map((song, id) => {
-                                    return id === 0
-                                        ? `**${id + 1}.** [${song.name}](${song.url}) - \`${song.formattedDuration}\` **(Currently Playing 🎵)**`
-                                        : `**${id + 1}.** [${song.name}](${song.url}) - \`${song.formattedDuration}\``;
-                                }).join('\n'));
+                                .setDescription(
+                                    `**Currently Playing:** [${currentSong.name}](${currentSong.url}) - \`${currentSong.formattedDuration}\`\n\n**Up Next:**\n${queueString ? queueString : 'No more songs in the queue!'}`
+                                ).setThumbnail(currentSong.thumbnail);
                             break;
 
                         case 'loop-queue':
@@ -258,101 +268,3 @@ module.exports = {
     }
 };
 
-// module.exports = {
-//     data: new SlashCommandBuilder()
-//         .setName("play")
-//         .setDescription("Plays a song by keyword, URL, or Spotify link!!!")
-//         .addStringOption(option =>
-//             option.setName("song")
-//                 .setDescription("YouTube URL, Spotify link, or song name")
-//                 .setRequired(true)
-//         ),
-
-//     async execute(interaction) {
-//         const query = interaction.options.getString("song");
-//         console.log("Query received:", query);
-
-//         // Check if the query is valid
-//         if (!query || query.trim().length === 0) {
-//             return interaction.reply({ content: "❌ Please provide a valid song name, URL, or Spotify link!", ephemeral: true });
-//         }
-
-//         const channel = interaction.member.voice.channel;
-
-//         // Check if the user is in a voice channel
-//         if (!channel) {
-//             return interaction.reply({ content: "❌ You must join a voice channel first!", ephemeral: true });
-//         }
-
-//         const client = interaction.client;
-
-//         // Ensure DisTube is initialized
-//         if (!client.distube) {
-//             return interaction.reply({ content: "❌ DisTube is not initialized in the bot!", ephemeral: true });
-//         }
-
-//         try {
-//             // Defer the reply to prevent timeouts
-//             if (!interaction.replied && !interaction.deferred) {
-//                 await interaction.deferReply();
-//             }
-
-//             // Fetch the text channel
-//             const textChannel = interaction.channel?.isTextBased() ? interaction.channel : interaction.guild.channels.cache.find(channel => channel.isTextBased());
-
-//             if (!textChannel) {
-//                 return interaction.editReply({ content: "❌ Unable to find a valid text channel!" });
-//             }
-
-//             // Try to play the song
-//             const song = await client.distube.play(channel, query, {
-//                 member: interaction.member,
-//                 textChannel: textChannel, // Use the fetched text channel
-//                 // Set a higher connection timeout (for example, 60 seconds instead of 30)
-//                 voiceConnectionTimeout: 60000
-
-//             });
-
-//             console.log("Song played:", song);
-
-//             // Check if the song was successfully found and played
-//             if (!song) {
-//                 return interaction.editReply({ content: "❌ Couldn't find the song. Try another query!" });
-//             }
-
-//             const embed = new EmbedBuilder()
-//                 .setColor(0x0099ff)
-//                 .setTitle("🎵 Now Playing")
-//                 .setDescription(`**[${song.name}](${song.url})**`)
-//                 .addFields(
-//                     { name: "⏳ Duration", value: song.formattedDuration, inline: true },
-//                     { name: "🙋 Requested by", value: interaction.user.username, inline: true }
-//                 )
-//                 .setThumbnail(song.thumbnail)
-//                 .setTimestamp();
-
-//             await interaction.editReply({ embeds: [embed] });
-
-//         } catch (error) {
-//             console.error("Error in play command:", error);
-
-//             // Log additional details to help troubleshoot
-//             console.error("Error details:", error);
-//             if (error.channel) {
-//                 console.error("Error occurred in channel:", error.channel.id);
-//             }
-
-//             // Handle specific DisTube errors
-//             if (error.code === "NO_RESULT") {
-//                 return interaction.editReply({ content: "❌ No results found for your query. Please try a different song or URL!" });
-//             }
-
-//             // Reply with a generic error message if something goes wrong
-//             if (interaction.replied || interaction.deferred) {
-//                 await interaction.editReply({ content: "❌ An error occurred while processing the command!" });
-//             } else {
-//                 await interaction.reply({ content: "❌ An error occurred!", ephemeral: true });
-//             }
-//         }
-//     }
-// };

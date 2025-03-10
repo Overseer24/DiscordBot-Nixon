@@ -8,7 +8,7 @@ const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
 process.env.FFMPEG_PATH = require('ffmpeg-static');
-// const { SoundCloudPlugin } = require("@distube/soundcloud");
+const { SoundCloudPlugin } = require("@distube/soundcloud");
 // const gTTS = require('gtts');
 // const { createAudioPlayer, createAudioResource, getVoiceConnection, AudioPlayerStatus } = require('@discordjs/voice');
 
@@ -34,7 +34,7 @@ client.distube = new DisTube(client, {
         ),
 
         new YouTubePlugin(),
-        // new SoundCloudPlugin(),
+        new SoundCloudPlugin(),
         new YtDlpPlugin()
     ],
 });
@@ -101,10 +101,16 @@ client.distube
             }
         )
     })
-    .on('error', (channel, e) => {
+    .on('error', (queue, e) => {
 
-        if (channel) {
-            channel.send({
+        console.log("Error L:", e);
+        console.log("Channel:", channel);
+        
+        const textChannel = queue?.textChannel;
+
+     
+        if (textChannel?.isTextBased?.()) {
+            textChannel.send({
                 embeds: [
                     new EmbedBuilder()
                         .setColor('Red')
@@ -113,7 +119,8 @@ client.distube
                         .setFooter({ text: 'Try another song or check the bot logs.' })
                 ]
             }).catch(console.error);
-            console.log("Error L:", e)
+        } else {
+            console.error("❌ Cannot send message: queue.textChannel is missing or invalid.");
         }
     })
     .on('empty', channel => {
