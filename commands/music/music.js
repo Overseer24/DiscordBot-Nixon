@@ -119,7 +119,7 @@ module.exports = {
                     }
                     const songs = queue.songs;
 
-                    const position = options.getInteger("position") - 2;
+                    const position = options.getInteger("position");
                     if (position < 0 || position >= queue.songs.length) // Check if the position is valid
                     {
                         embed.setColor('Red').setDescription("❌ Invalid position provided!");

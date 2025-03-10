@@ -7,10 +7,11 @@ const { DisTube } = require("distube");
 const { YtDlpPlugin } = require("@distube/yt-dlp");
 const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
-process.env.FFMPEG_PATH = require('ffmpeg-static');
+const { DirectLinkPlugin } = require("@distube/direct-link");
+// process.env.FFMPEG_PATH = require('ffmpeg-static');
 const { SoundCloudPlugin } = require("@distube/soundcloud");
 // const gTTS = require('gtts');
-// const { createAudioPlayer, createAudioResource, getVoiceConnection, AudioPlayerStatus } = require('@discordjs/voice');
+const { createAudioPlayer, createAudioResource, getVoiceConnection, AudioPlayerStatus } = require('@discordjs/voice');
 
 
 const client = new Client({
@@ -18,44 +19,32 @@ const client = new Client({
 
 });
 client.distube = new DisTube(client, {
-    // leaveOnEmpty: true,
-    // leaveOnFinish: false,
-    // leaveOnStop: true,
-    // emitNewSongOnly: true,
-
     plugins: [
-        new SpotifyPlugin(
-            {
-                api: {
-                    clientId: process.env.SPOTIFY_CLIENT_ID,
-                    clientSecret: process.env.SPOTIFY_CLIENT_SECRET
-                }
+        new SpotifyPlugin({
+            api: {
+                clientId: process.env.SPOTIFY_CLIENT_ID,
+                clientSecret: process.env.SPOTIFY_CLIENT_SECRET
             }
-        ),
-
+        }),
         new YouTubePlugin(),
         new SoundCloudPlugin(),
-        new YtDlpPlugin()
-    ],
+        new DirectLinkPlugin(),
+        new YtDlpPlugin({ update: true }),
+    ]
 });
+
+
 client.distube.setMaxListeners(20); // Increase max listeners to 20
 let disconnectTimeout;
 
 const status = queue =>
     `🔊 **Volume:** \`${queue.volume}%\` | 🎚️ **Filter:** \`${queue.filters.names.join(', ') || 'Inactive'}\` | 🔁 **Repeat:** \`${queue.repeatMode ? (queue.repeatMode === 2 ? 'Queue' : 'Track') : 'Off'
-    }\` | 🤖 **Autoplay:** \`${queue.autoplay ? 'On' : 'Off'}\``;
+    }\` | 🤖 **Autoplay:** \`${queue.autoplay ? 'On' : 'Off'}\``
 
 client.distube
     .on('playSong', (queue, song) => {
         resetDisconnectTimer()
-        console.log("🎵 Now Playing:", song.name, "| Duration:", song.formattedDuration);
-        console.log("Queue status:", {
-            playing: queue.playing,
-            songsLeft: queue.songs.length,
-            volume: queue.volume,
-            repeatMode: queue.repeatMode,
-            autoplay: queue.autoplay
-        });
+        console.log("Playing song:", song);
         if (queue.textChannel) {
             queue.textChannel.send({
                 embeds: [new EmbedBuilder()
@@ -84,9 +73,6 @@ client.distube
             }
         )
 
-        // if (!queue.playing) {
-        //     await queue.play();
-        // }
     })
     .on('addList', (queue, playlist) => {
         resetDisconnectTimer()
@@ -101,24 +87,20 @@ client.distube
             }
         )
     })
-    .on('error', (queue, e) => {
+    .on('error', (error, queue) => {
 
-        console.log("Error L:", e);
-        console.log("Channel:", channel);
-        
-        const textChannel = queue?.textChannel;
+        const textChannel = queue.voiceChannel?.guild.channels.cache.get(queue.textChannel?.id);
 
-     
         if (textChannel?.isTextBased?.()) {
             textChannel.send({
                 embeds: [
                     new EmbedBuilder()
                         .setColor('Red')
                         .setTitle('⛔ Error')
-                        .setDescription(`⚠️ **An error occurred while playing a song:**\n\`${e.message}\``)
+                        .setDescription(`⚠️ **An error occurred while playing a song:**\n\`${error.message}\``)
                         .setFooter({ text: 'Try another song or check the bot logs.' })
                 ]
-            }).catch(console.error);
+            });
         } else {
             console.error("❌ Cannot send message: queue.textChannel is missing or invalid.");
         }
@@ -167,7 +149,7 @@ client.distube
 
         // Disconnect after 30 sec if no new songs are added
         disconnectTimeout = setTimeout(() => {
-            console.log("No new songs, playing TTS...");
+            // console.log("No new songs, playing TTS...");
             const ttsFile = 'tts.mp3';
             if (!fs.existsSync(ttsFile)) {
                 console.error("TTS file not found:", ttsFile);
@@ -180,7 +162,7 @@ client.distube
             player.play(resource);
 
             player.on(AudioPlayerStatus.Idle, () => {
-                console.log("Finished playing TTS file.");
+                // console.log("Finished playing TTS file.");
                 if (queue.voice.connection) {
                     queue.voice.connection.destroy();
                 }
@@ -193,13 +175,13 @@ client.distube
 
 const resetDisconnectTimer = () => {
     if (disconnectTimeout) {
-        console.log("🛑 Clearing previous disconnect timeout.");
+        // console.log("🛑 Clearing previous disconnect timeout.");
         clearTimeout(disconnectTimeout);
         disconnectTimeout = null;
     } else {
-        console.log("✅ No active disconnect timeout to clear.");
+        // console.log("✅ No active disconnect timeout to clear.");
     }
-    console.log("🔄 Disconnect timer reset! Bot will stay in the VC.");
+    // console.log("🔄 Disconnect timer reset! Bot will stay in the VC.");
 };
 
 
@@ -223,7 +205,7 @@ for (const fileOrFolder of commandFiles) {
             if ('data' in command && 'execute' in command) {
                 client.commands.set(command.data.name, command);
             } else {
-                console.log(`Command ${file} is missing 'data' or 'execute'`);
+                // console.log(`Command ${file} is missing 'data' or 'execute'`);
             }
         }
     }
@@ -232,7 +214,7 @@ for (const fileOrFolder of commandFiles) {
         if ('data' in command && 'execute' in command) {
             client.commands.set(command.data.name, command);
         } else {
-            console.log(`Command ${file} is missing 'data' or 'execute'`);
+            // console.log(`Command ${file} is missing 'data' or 'execute'`);
         }
     }
 }
