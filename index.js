@@ -222,7 +222,7 @@ for (const fileOrFolder of commandFiles) {
 const eventsPath = path.join(__dirname, "events");
 fs.readdirSync(eventsPath).forEach((file) => {
     if (file.endsWith(".js")) {
-        const event = require(`./events/${file}`);
+        const event = require(path.join(eventsPath, file));
         client.on(event.name, event.execute.bind(null, client));
     }
 });

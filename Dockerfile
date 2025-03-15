@@ -1,14 +1,15 @@
 # Use an official Node.js image
-FROM node:18
+FROM node:latest
 
 # Install FFmpeg
 RUN apt-get update && apt-get install -y ffmpeg
+
 
 # Set the working directory
 WORKDIR /app
 
 # Copy package.json and install dependencies
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install --production
 
 # Copy the rest of your bot's code
